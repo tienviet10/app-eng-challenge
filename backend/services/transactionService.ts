@@ -9,8 +9,8 @@ import { convertBusinessEntityToBusinessMap } from "../utils/businessMapping";
 
 /**
   It is NOT a good practice to have a state server.
-  The stateless server would required to replace this by Redis (in-memory storage type)
-  Calling database could take times (e.g. enrichTransaction method)
+  A stateless server would require to replace this by Redis (in-memory storage type)
+  Direct database calls can be slow (e.g. enrichTransaction method)
 */
 let idsToBusinessesMap: Map<string, string>;
 

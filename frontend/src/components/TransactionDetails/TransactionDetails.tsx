@@ -22,6 +22,8 @@ type Transaction = {
   to: string;
   amount: number;
   timestamp: string;
+  from_business?: string;
+  to_business?: string;
 };
 
 const TransactionDetailsTable = () => {
@@ -30,8 +32,9 @@ const TransactionDetailsTable = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [newTransaction, setNewTransaction] = useState<Transaction | null>(null);
-
+  const [newTransaction, setNewTransaction] = useState<Transaction | null>(
+    null
+  );
 
   // Sorting State - default to timestamp descending (newest first)
   const [sortBy, setSortBy] = useState<keyof Transaction>("timestamp");
@@ -42,7 +45,7 @@ const TransactionDetailsTable = () => {
     (async () => {
       setLoading(true);
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+        const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
         const response = await fetch(`${apiUrl}/api/businesses/transactions/`);
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
@@ -67,32 +70,33 @@ const TransactionDetailsTable = () => {
     const handleGraphUpdate = async (data: any) => {
       if (data && data.newTransaction) {
         const transaction = data.newTransaction;
-        
+
         // Add the new transaction to our data
-        setData(prevData => {
+        setData((prevData) => {
           // Create a new array with the new transaction at the beginning
           const newData = [transaction, ...prevData];
           return newData;
         });
-        
+
         // Also update filtered data if it should be included in the current filter
-        setFilteredData(prevFiltered => {
+        setFilteredData((prevFiltered) => {
           const query = searchQuery.toLowerCase();
-          const shouldInclude = !query || 
-            transaction.from.toLowerCase().includes(query) ||
-            transaction.to.toLowerCase().includes(query) ||
+          const shouldInclude =
+            !query ||
+            transaction.from_business?.toLowerCase().includes(query) ||
+            transaction.to_business?.toLowerCase().includes(query) ||
             transaction.timestamp.toLowerCase().includes(query) ||
             transaction.amount.toString().includes(query);
-            
+
           if (shouldInclude) {
             return [transaction, ...prevFiltered];
           }
           return prevFiltered;
         });
-        
+
         // Set new transaction for highlighting
         setNewTransaction(transaction);
-        
+
         // Clear the highlight effect after 3 seconds
         setTimeout(() => {
           setNewTransaction(null);
@@ -101,17 +105,16 @@ const TransactionDetailsTable = () => {
     };
 
     // Register event listener
-    socket.on('graphUpdate', handleGraphUpdate);
+    socket.on("graphUpdate", handleGraphUpdate);
 
     // Cleanup: remove event listener on unmount
     return () => {
-      socket.off('graphUpdate', handleGraphUpdate);
+      socket.off("graphUpdate", handleGraphUpdate);
     };
   }, [searchQuery, transactionsData]);
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error}</p>;
-
 
   // Handle Search Input Change
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,11 +122,12 @@ const TransactionDetailsTable = () => {
     setSearchQuery(query);
 
     // Filter the transactions based on the search query
-    const filtered = transactionsData.filter((transaction) =>
-      transaction.from.toLowerCase().includes(query) ||
-      transaction.to.toLowerCase().includes(query) ||
-      transaction.timestamp.toLowerCase().includes(query) ||
-      transaction.amount.toString().includes(query)
+    const filtered = transactionsData.filter(
+      (transaction) =>
+        transaction.from_business?.toLowerCase().includes(query) ||
+        transaction.to_business?.toLowerCase().includes(query) ||
+        transaction.timestamp.toLowerCase().includes(query) ||
+        transaction.amount.toString().includes(query)
     );
     setFilteredData(filtered);
   };
@@ -181,15 +185,11 @@ const TransactionDetailsTable = () => {
     return 0;
   });
 
-
   return (
     <div className="transaction-details-container">
-
       {/* Header Section */}
       <Box className="header-section">
-        <Typography sx={{ fontWeight: "bold" }}>
-          Transactions
-        </Typography>
+        <Typography sx={{ fontWeight: "bold" }}>Transactions</Typography>
       </Box>
 
       {/* Search Section */}
@@ -213,7 +213,7 @@ const TransactionDetailsTable = () => {
 
       {/* Table Section */}
       <TableContainer component={Paper} className="table-container">
-        <Table 
+        <Table
           aria-label="Detailed Transactions Table"
           size="small"
           className="transaction-table"
@@ -226,25 +226,25 @@ const TransactionDetailsTable = () => {
                   direction={sortDirection}
                   onClick={() => handleSort("timestamp")}
                   // Set to active by default to show sort direction
-                  sx={{ '& .MuiTableSortLabel-icon': { opacity: 1 } }}
+                  sx={{ "& .MuiTableSortLabel-icon": { opacity: 1 } }}
                 >
                   Time
                 </TableSortLabel>
               </TableCell>
               <TableCell>
                 <TableSortLabel
-                  active={sortBy === "from"}
+                  active={sortBy === "from_business"}
                   direction={sortDirection}
-                  onClick={() => handleSort("from")}
+                  onClick={() => handleSort("from_business")}
                 >
                   From
                 </TableSortLabel>
               </TableCell>
               <TableCell>
                 <TableSortLabel
-                  active={sortBy === "to"}
+                  active={sortBy === "to_business"}
                   direction={sortDirection}
-                  onClick={() => handleSort("to")}
+                  onClick={() => handleSort("to_business")}
                 >
                   To
                 </TableSortLabel>
@@ -263,28 +263,30 @@ const TransactionDetailsTable = () => {
           <TableBody>
             {sortedData.map((row, index) => {
               // Check if this is the new transaction that just came in
-              const isNewTransaction = newTransaction && 
-                row.from === newTransaction.from && 
-                row.to === newTransaction.to && 
-                row.amount === newTransaction.amount && 
+              const isNewTransaction =
+                newTransaction &&
+                row.from === newTransaction.from &&
+                row.to === newTransaction.to &&
+                row.amount === newTransaction.amount &&
                 row.timestamp === newTransaction.timestamp;
-                
+
               return (
-                <TableRow 
+                <TableRow
                   key={index}
-                  className={isNewTransaction ? 'new-transaction-row' : ''}
+                  className={isNewTransaction ? "new-transaction-row" : ""}
                 >
                   <TableCell>{formatTimestamp(row.timestamp)}</TableCell>
-                  <TableCell>{row.from}</TableCell>
-                  <TableCell>{row.to}</TableCell>
-                  <TableCell align="right">{formatAmount(row.amount)}</TableCell>
+                  <TableCell>{row.from_business}</TableCell>
+                  <TableCell>{row.to_business}</TableCell>
+                  <TableCell align="right">
+                    {formatAmount(row.amount)}
+                  </TableCell>
                 </TableRow>
               );
             })}
           </TableBody>
         </Table>
       </TableContainer>
-
     </div>
   );
 };
