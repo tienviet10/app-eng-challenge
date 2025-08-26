@@ -28,7 +28,6 @@ type Transaction = {
 
 const TransactionDetailsTable = () => {
   const [transactionsData, setData] = useState<Transaction[]>([]);
-  const [filteredData, setFilteredData] = useState<Transaction[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -52,7 +51,6 @@ const TransactionDetailsTable = () => {
         }
         const result = await response.json();
         setData(result.data);
-        setFilteredData(result.data); // Initialize filtered data
       } catch (err: unknown) {
         setError((err as Error).message);
       } finally {
@@ -76,22 +74,6 @@ const TransactionDetailsTable = () => {
           // Create a new array with the new transaction at the beginning
           const newData = [transaction, ...prevData];
           return newData;
-        });
-
-        // Also update filtered data if it should be included in the current filter
-        setFilteredData((prevFiltered) => {
-          const query = searchQuery.toLowerCase();
-          const shouldInclude =
-            !query ||
-            transaction.from_business?.toLowerCase().includes(query) ||
-            transaction.to_business?.toLowerCase().includes(query) ||
-            transaction.timestamp.toLowerCase().includes(query) ||
-            transaction.amount.toString().includes(query);
-
-          if (shouldInclude) {
-            return [transaction, ...prevFiltered];
-          }
-          return prevFiltered;
         });
 
         // Set new transaction for highlighting
@@ -120,16 +102,6 @@ const TransactionDetailsTable = () => {
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const query = event.target.value.toLowerCase();
     setSearchQuery(query);
-
-    // Filter the transactions based on the search query
-    const filtered = transactionsData.filter(
-      (transaction) =>
-        transaction.from_business?.toLowerCase().includes(query) ||
-        transaction.to_business?.toLowerCase().includes(query) ||
-        transaction.timestamp.toLowerCase().includes(query) ||
-        transaction.amount.toString().includes(query)
-    );
-    setFilteredData(filtered);
   };
 
   // Format Timestamp
@@ -159,6 +131,15 @@ const TransactionDetailsTable = () => {
     setSortDirection(isAsc ? "desc" : "asc");
     setSortBy(property);
   };
+
+  // Filter the transactions based on the search query
+  const filteredData = [...transactionsData].filter(
+    (transaction) =>
+      transaction.from_business?.toLowerCase().includes(searchQuery) ||
+      transaction.to_business?.toLowerCase().includes(searchQuery) ||
+      transaction.timestamp.toLowerCase().includes(searchQuery) ||
+      transaction.amount.toString().includes(searchQuery)
+  );
 
   // Apply Sorting
   const sortedData = [...filteredData].sort((a, b) => {
