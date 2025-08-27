@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Table,
   TableBody,
@@ -13,10 +13,15 @@ import {
   TableSortLabel,
   InputAdornment,
   Pagination,
+  Tooltip,
+  Button,
+  IconButton,
+  Badge,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import { getSocket } from "../../services/socket";
 import "./TransactionDetails.css";
+import { Refresh } from "@mui/icons-material";
 
 const ITEM_PER_PAGE = 15;
 
@@ -53,9 +58,8 @@ const TransactionDetailsTable = () => {
   const [transactionsData, setData] = useState<Transaction[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [newTransaction, setNewTransaction] = useState<Transaction | null>(null);
-
+  const [newDataIcon, setNewDataIcon] = useState(false);
 
   // Sorting State - default to timestamp descending (newest first)
   const [sortBy, setSortBy] = useState<keyof Transaction>("timestamp");
@@ -64,31 +68,40 @@ const TransactionDetailsTable = () => {
   // Pagination
   const [page, setPage] = useState(1);
 
+  const sortOrSearch = useRef(false);
+
+  const fetchTransactionDetailsData = async () => {
+    try {
+      setNewDataIcon(false);
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+      const response = await fetch(`${apiUrl}/api/businesses/transactions/`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const result = await response.json();
+      setData(result.data);
+   
+    } catch (err: unknown) {
+      setError((err as Error).message);
+    }
+  };
+
+  useEffect(() => {
+    if (
+      !(
+        searchQuery === "" &&
+        sortBy === "timestamp" &&
+        sortDirection === "desc" &&
+        page === 1
+      )
+    ) {
+      sortOrSearch.current = true;
+    }
+  });
+
   // Initial data fetch
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-        const response = await fetch(`${apiUrl}/api/businesses/transactions/`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const result = await response.json();
-        const resultWithIds: Transaction[] = [];
-        result.data.forEach((item: Transaction, index: number) => {
-          resultWithIds.push({
-            ...item,
-            id: `tx-${item.timestamp}-${index}`
-          })
-        })
-        setData(resultWithIds);
-      } catch (err: unknown) {
-        setError((err as Error).message);
-      } finally {
-        setLoading(false);
-      }
-    })();
+    fetchTransactionDetailsData();
   }, []);
 
   // WebSocket connection for live updates
@@ -98,6 +111,11 @@ const TransactionDetailsTable = () => {
 
     // Define event handler
     const handleGraphUpdate = async (data: SocketData) => {
+      setNewDataIcon(true);
+
+      if (sortOrSearch.current) return;
+      setNewDataIcon(false);
+
       if (data && data.newTransaction) {
         const transaction = data.newTransaction;
         
@@ -127,7 +145,6 @@ const TransactionDetailsTable = () => {
     };
   }, []);
 
-  if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error}</p>;
 
 
@@ -164,6 +181,19 @@ const TransactionDetailsTable = () => {
     const isAsc = sortBy === property && sortDirection === "asc";
     setSortDirection(isAsc ? "desc" : "asc");
     setSortBy(property);
+  };
+
+  const handleReset = () => {
+    setSortBy("timestamp");
+    setSortDirection("desc");
+    setSearchQuery("");
+    sortOrSearch.current = false;
+    setPage(1);
+    fetchTransactionDetailsData();
+  };
+
+  const handleFetchCurrentData = () => {
+    fetchTransactionDetailsData();
   };
 
   // Filter the transactions based on the search query
@@ -230,6 +260,34 @@ const TransactionDetailsTable = () => {
               ),
             }}
           />
+          <Tooltip title="Clear all filters">
+            <Button
+              variant="outlined"
+              onClick={handleReset}
+              sx={{
+                borderColor: "#666",
+                color: "#fff",
+                "&:hover": {
+                  borderColor: "#888",
+                  backgroundColor: "rgba(255, 255, 255, 0.08)",
+                },
+                textTransform: "none",
+                fontWeight: 500,
+                minWidth: "80px",
+                marginLeft: "10px",
+              }}
+            >
+              Reset
+            </Button>
+          </Tooltip>
+
+          <Tooltip title="Fetch new data">
+            <IconButton onClick={handleFetchCurrentData}>
+              <Badge variant="dot" color="secondary" invisible={!newDataIcon}>
+                <Refresh />
+              </Badge>
+            </IconButton>
+          </Tooltip>
         </div>
 
         {/* Table Section */}
