@@ -1,6 +1,6 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
-import { Business } from '../types';
+import type { Business } from '../types';
 
 const dbPath = process.env.DATABASE_PATH || path.resolve(__dirname, '../../database/sayari.db');
 

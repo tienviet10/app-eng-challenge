@@ -1,12 +1,20 @@
 import * as businessService from './businessService';
 import * as graphRepo from '../repositories/graphRepository';
-import { Transaction, CreateTransactionDto } from '../types';
-
+import type { Transaction, CreateTransactionDto, TransactionWithBusinessName } from '../types';
+import * as graphService from './graphService';
 /**
  * Get all transactions with optional filtering
  */
-export const getAllTransactions = async (from?: string, to?: string): Promise<Transaction[]> => {
-    return await graphRepo.findAllEdges(from, to);
+export const getAllTransactions = async (from?: string, to?: string): Promise<TransactionWithBusinessName[]> => {
+  const { nameMap } = await graphService.getEnrichedGraphData();
+
+  const allEdges = await graphRepo.findAllEdges(from, to);
+
+  return allEdges.map(edge => ({
+    ...edge,
+    from_business: nameMap[edge.from] || edge.from,
+    to_business: nameMap[edge.to] || edge.to,
+  }))
 };
 
 /**

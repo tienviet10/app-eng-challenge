@@ -1,6 +1,6 @@
 import * as businessRepo from '../repositories/businessRepository';
 import * as graphRepo from '../repositories/graphRepository';
-import { GraphNode, GraphEdge } from '../types';
+import type { GraphNode, GraphEdge } from '../types';
 
 /**
  * Gets complete graph data
@@ -15,16 +15,18 @@ export const getGraphData = async (): Promise<{ nodes: GraphNode[], edges: Graph
  * Gets complete graph data with enriched nodes
  * @returns Object containing enriched nodes and edges for graph visualization
  */
-export const getEnrichedGraphData = async (): Promise<{ nodes: GraphNode[], edges: GraphEdge[] }> => {
+export const getEnrichedGraphData = async (): Promise<{ nodes: GraphNode[], edges: GraphEdge[], nameMap: Record<string, string> }> => {
     const [nodes, edges] = await Promise.all([
         graphRepo.getAllNodes(),
         graphRepo.getAllEdges()
     ]);
     
     let enrichedNodes = nodes;
+    let nameMap: Record<string, string> = {};
     if (nodes && nodes.length > 0) {
         const businessIds = nodes.map(node => node.id);
-        const { nameMap } = await businessRepo.getBusinessDetails(businessIds);
+        const nameMapData = await businessRepo.getBusinessDetails(businessIds);
+        nameMap = nameMapData.nameMap;
         
         enrichedNodes = nodes.map(node => ({
             ...node,
@@ -34,7 +36,8 @@ export const getEnrichedGraphData = async (): Promise<{ nodes: GraphNode[], edge
     
     return {
         nodes: enrichedNodes,
-        edges
+        edges,
+        nameMap
     };
 };
 

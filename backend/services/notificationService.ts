@@ -1,6 +1,6 @@
 import { Server } from 'socket.io';
 import * as graphService from './graphService';
-import { Transaction } from '../types';
+import type { Transaction } from '../types';
 
 /**
  * Emits a graph update event to all connected Socket.IO clients
@@ -10,10 +10,17 @@ import { Transaction } from '../types';
 export const emitGraphUpdate = async (io: Server | undefined, transactionDetails: Transaction): Promise<void> => {
     if (!io) return;
     
-    const { nodes, edges } = await graphService.getEnrichedGraphData();
+    const { nodes, edges, nameMap } = await graphService.getEnrichedGraphData();
+
+    const enrichedTransactionDetails = {
+      ...transactionDetails,
+      from_business: nameMap[transactionDetails.from] || transactionDetails.from,
+      to_business: nameMap[transactionDetails.to] || transactionDetails.to,
+    }
+
     io.emit('graphUpdate', { 
         nodes, 
         edges,
-        newTransaction: transactionDetails
+        newTransaction: enrichedTransactionDetails
     });
 };
