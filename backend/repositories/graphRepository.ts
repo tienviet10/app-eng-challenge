@@ -1,5 +1,5 @@
 import neo4j, { Driver, Session } from 'neo4j-driver';
-import { Transaction, GraphEdge, GraphNode } from '../types';
+import type { Transaction, GraphEdge, GraphNode } from '../types';
 
 // Initialize driver once
 const MEMGRAPH_URL = process.env.MEMGRAPH_URL || 'bolt://localhost:7687';

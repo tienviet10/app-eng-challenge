@@ -1,6 +1,6 @@
 import * as businessService from './businessService';
 import * as graphRepo from '../repositories/graphRepository';
-import { Transaction, CreateTransactionDto } from '../types';
+import type { Transaction, CreateTransactionDto } from '../types';
 
 /**
  * Get all transactions with optional filtering
