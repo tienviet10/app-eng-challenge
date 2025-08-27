@@ -22,11 +22,12 @@ type Transaction = {
   to: string;
   amount: number;
   timestamp: string;
+  from_business?: string;
+  to_business?: string;
 };
 
 const TransactionDetailsTable = () => {
   const [transactionsData, setData] = useState<Transaction[]>([]);
-  const [filteredData, setFilteredData] = useState<Transaction[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -49,7 +50,6 @@ const TransactionDetailsTable = () => {
         }
         const result = await response.json();
         setData(result.data);
-        setFilteredData(result.data); // Initialize filtered data
       } catch (err: unknown) {
         setError((err as Error).message);
       } finally {
@@ -75,21 +75,6 @@ const TransactionDetailsTable = () => {
           return newData;
         });
         
-        // Also update filtered data if it should be included in the current filter
-        setFilteredData(prevFiltered => {
-          const query = searchQuery.toLowerCase();
-          const shouldInclude = !query || 
-            transaction.from.toLowerCase().includes(query) ||
-            transaction.to.toLowerCase().includes(query) ||
-            transaction.timestamp.toLowerCase().includes(query) ||
-            transaction.amount.toString().includes(query);
-            
-          if (shouldInclude) {
-            return [transaction, ...prevFiltered];
-          }
-          return prevFiltered;
-        });
-        
         // Set new transaction for highlighting
         setNewTransaction(transaction);
         
@@ -107,7 +92,7 @@ const TransactionDetailsTable = () => {
     return () => {
       socket.off('graphUpdate', handleGraphUpdate);
     };
-  }, [searchQuery, transactionsData]);
+  }, []);
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error}</p>;
@@ -117,15 +102,6 @@ const TransactionDetailsTable = () => {
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const query = event.target.value.toLowerCase();
     setSearchQuery(query);
-
-    // Filter the transactions based on the search query
-    const filtered = transactionsData.filter((transaction) =>
-      transaction.from.toLowerCase().includes(query) ||
-      transaction.to.toLowerCase().includes(query) ||
-      transaction.timestamp.toLowerCase().includes(query) ||
-      transaction.amount.toString().includes(query)
-    );
-    setFilteredData(filtered);
   };
 
   // Format Timestamp
@@ -155,6 +131,14 @@ const TransactionDetailsTable = () => {
     setSortDirection(isAsc ? "desc" : "asc");
     setSortBy(property);
   };
+
+  // Filter the transactions based on the search query
+  const filteredData = [...transactionsData].filter((transaction) =>
+    transaction.from_business?.toLowerCase().includes(searchQuery) ||
+    transaction.to_business?.toLowerCase().includes(searchQuery) ||
+    transaction.timestamp.toLowerCase().includes(searchQuery) ||
+    transaction.amount.toString().includes(searchQuery)
+  );
 
   // Apply Sorting
   const sortedData = [...filteredData].sort((a, b) => {
@@ -233,18 +217,18 @@ const TransactionDetailsTable = () => {
               </TableCell>
               <TableCell>
                 <TableSortLabel
-                  active={sortBy === "from"}
+                  active={sortBy === "from_business"}
                   direction={sortDirection}
-                  onClick={() => handleSort("from")}
+                  onClick={() => handleSort("from_business")}
                 >
                   From
                 </TableSortLabel>
               </TableCell>
               <TableCell>
                 <TableSortLabel
-                  active={sortBy === "to"}
+                  active={sortBy === "to_business"}
                   direction={sortDirection}
-                  onClick={() => handleSort("to")}
+                  onClick={() => handleSort("to_business")}
                 >
                   To
                 </TableSortLabel>
@@ -275,8 +259,8 @@ const TransactionDetailsTable = () => {
                   className={isNewTransaction ? 'new-transaction-row' : ''}
                 >
                   <TableCell>{formatTimestamp(row.timestamp)}</TableCell>
-                  <TableCell>{row.from}</TableCell>
-                  <TableCell>{row.to}</TableCell>
+                  <TableCell>{row.from_business}</TableCell>
+                  <TableCell>{row.to_business}</TableCell>
                   <TableCell align="right">{formatAmount(row.amount)}</TableCell>
                 </TableRow>
               );
