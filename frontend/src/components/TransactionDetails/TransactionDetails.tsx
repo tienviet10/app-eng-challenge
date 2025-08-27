@@ -99,7 +99,7 @@ const TransactionDetailsTable = () => {
     return () => {
       socket.off("graphUpdate", handleGraphUpdate);
     };
-  }, [searchQuery, transactionsData]);
+  }, []);
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error}</p>;
