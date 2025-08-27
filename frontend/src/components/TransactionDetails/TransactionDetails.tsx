@@ -18,6 +18,7 @@ import { getSocket } from "../../services/socket";
 import "./TransactionDetails.css";
 
 type Transaction = {
+  id: string;
   from: string;
   to: string;
   amount: number;
@@ -25,6 +26,25 @@ type Transaction = {
   from_business?: string;
   to_business?: string;
 };
+
+type NodeGraph = {
+  id: string;
+  label: string;
+}
+
+type EdgeGraph = {
+  id: number;
+  source: string;
+  target: string;
+  transactionAmount: number;
+  transactionCount:number;
+}
+
+type SocketData = {
+  edges?: EdgeGraph[];
+  newTransaction?: Transaction;
+  nodes?: NodeGraph[];
+}
 
 const TransactionDetailsTable = () => {
   const [transactionsData, setData] = useState<Transaction[]>([]);
@@ -49,7 +69,14 @@ const TransactionDetailsTable = () => {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
         const result = await response.json();
-        setData(result.data);
+        const resultWithIds: Transaction[] = [];
+        result.data.forEach((item: Transaction, index: number) => {
+          resultWithIds.push({
+            ...item,
+            id: `tx-${Date.now()}-${index}`
+          })
+        })
+        setData(resultWithIds);
       } catch (err: unknown) {
         setError((err as Error).message);
       } finally {
@@ -64,14 +91,14 @@ const TransactionDetailsTable = () => {
     const socket = getSocket();
 
     // Define event handler
-    const handleGraphUpdate = async (data: any) => {
+    const handleGraphUpdate = async (data: SocketData) => {
       if (data && data.newTransaction) {
         const transaction = data.newTransaction;
         
         // Add the new transaction to our data
         setData(prevData => {
           // Create a new array with the new transaction at the beginning
-          const newData = [transaction, ...prevData];
+          const newData = [{...transaction, id: `tx-${Date.now()}`}, ...prevData];
           return newData;
         });
         
@@ -165,7 +192,6 @@ const TransactionDetailsTable = () => {
     return 0;
   });
 
-
   return (
     <div className="transaction-details-container">
 
@@ -245,7 +271,7 @@ const TransactionDetailsTable = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedData.map((row, index) => {
+            {sortedData.map((row) => {
               // Check if this is the new transaction that just came in
               const isNewTransaction = newTransaction && 
                 row.from === newTransaction.from && 
@@ -255,7 +281,7 @@ const TransactionDetailsTable = () => {
                 
               return (
                 <TableRow 
-                  key={index}
+                  key={row.id}
                   className={isNewTransaction ? 'new-transaction-row' : ''}
                 >
                   <TableCell>{formatTimestamp(row.timestamp)}</TableCell>
