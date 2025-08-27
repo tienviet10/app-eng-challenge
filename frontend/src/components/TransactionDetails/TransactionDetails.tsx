@@ -79,7 +79,7 @@ const TransactionDetailsTable = () => {
         result.data.forEach((item: Transaction, index: number) => {
           resultWithIds.push({
             ...item,
-            id: `tx-${Date.now()}-${index}`
+            id: `tx-${item.timestamp}-${index}`
           })
         })
         setData(resultWithIds);
@@ -104,7 +104,7 @@ const TransactionDetailsTable = () => {
         // Add the new transaction to our data
         setData(prevData => {
           // Create a new array with the new transaction at the beginning
-          const newData = [{...transaction, id: `tx-${Date.now()}`}, ...prevData];
+          const newData = [{...transaction, id: `tx-${transaction.timestamp}`}, ...prevData];
           return newData;
         });
         
@@ -282,7 +282,7 @@ const TransactionDetailsTable = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginatedData.map((row, index) => {
+              {paginatedData.map((row) => {
                 // Check if this is the new transaction that just came in
                 const isNewTransaction =
                   newTransaction &&
@@ -293,7 +293,7 @@ const TransactionDetailsTable = () => {
 
                 return (
                   <TableRow
-                    key={index}
+                    key={row.id}
                     className={isNewTransaction ? "new-transaction-row" : ""}
                   >
                     <TableCell>{formatTimestamp(row.timestamp)}</TableCell>
