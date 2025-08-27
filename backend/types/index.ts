@@ -5,11 +5,6 @@ export interface Transaction {
   timestamp: string;
 }
 
-export interface TransactionWithBusinessName extends Transaction {
-  from_business?: string;
-  to_business?: string;
-}
-
 export interface GraphNode {
   id: string;
   label?: string;

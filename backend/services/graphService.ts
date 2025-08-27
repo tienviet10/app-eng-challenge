@@ -1,6 +1,6 @@
 import * as businessRepo from '../repositories/businessRepository';
 import * as graphRepo from '../repositories/graphRepository';
-import type { GraphNode, GraphEdge } from '../types';
+import { GraphNode, GraphEdge } from '../types';
 
 /**
  * Gets complete graph data

@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import * as businessRepo from '../repositories/businessRepository';
 import * as graphRepo from '../repositories/graphRepository';
-import type { Business, CreateBusinessDto } from '../types';
+import { Business, CreateBusinessDto } from '../types';
 
 /**
  * Get all businesses

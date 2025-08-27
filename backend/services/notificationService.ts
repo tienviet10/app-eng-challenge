@@ -1,6 +1,6 @@
 import { Server } from 'socket.io';
 import * as graphService from './graphService';
-import type { Transaction } from '../types';
+import { Transaction } from '../types';
 
 /**
  * Emits a graph update event to all connected Socket.IO clients
