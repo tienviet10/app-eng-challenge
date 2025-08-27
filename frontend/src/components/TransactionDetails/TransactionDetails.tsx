@@ -135,6 +135,7 @@ const TransactionDetailsTable = () => {
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const query = event.target.value.toLowerCase();
     setSearchQuery(query);
+    setPage(1);
   };
 
   // Format Timestamp
