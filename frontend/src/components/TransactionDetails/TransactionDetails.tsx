@@ -12,10 +12,13 @@ import {
   Box,
   TableSortLabel,
   InputAdornment,
+  Pagination,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import { getSocket } from "../../services/socket";
 import "./TransactionDetails.css";
+
+const ITEM_PER_PAGE = 15;
 
 type Transaction = {
   id: string;
@@ -58,6 +61,9 @@ const TransactionDetailsTable = () => {
   const [sortBy, setSortBy] = useState<keyof Transaction>("timestamp");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
+  // Pagination
+  const [page, setPage] = useState(1);
+
   // Initial data fetch
   useEffect(() => {
     (async () => {
@@ -73,7 +79,7 @@ const TransactionDetailsTable = () => {
         result.data.forEach((item: Transaction, index: number) => {
           resultWithIds.push({
             ...item,
-            id: `tx-${Date.now()}-${index}`
+            id: `tx-${item.timestamp}-${index}`
           })
         })
         setData(resultWithIds);
@@ -98,7 +104,7 @@ const TransactionDetailsTable = () => {
         // Add the new transaction to our data
         setData(prevData => {
           // Create a new array with the new transaction at the beginning
-          const newData = [{...transaction, id: `tx-${Date.now()}`}, ...prevData];
+          const newData = [{...transaction, id: `tx-${transaction.timestamp}`}, ...prevData];
           return newData;
         });
         
@@ -129,6 +135,7 @@ const TransactionDetailsTable = () => {
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const query = event.target.value.toLowerCase();
     setSearchQuery(query);
+    setPage(1);
   };
 
   // Format Timestamp
@@ -192,109 +199,133 @@ const TransactionDetailsTable = () => {
     return 0;
   });
 
+  // Pagination
+  const totalPages = Math.ceil(sortedData.length / ITEM_PER_PAGE);
+  const startIndex = (page - 1) * ITEM_PER_PAGE;
+  const endIndex = startIndex + ITEM_PER_PAGE;
+  const paginatedData = sortedData.slice(startIndex, endIndex);
+
   return (
     <div className="transaction-details-container">
+      <div className="transaction-main">
+        {/* Header Section */}
+        <Box className="header-section">
+          <Typography sx={{ fontWeight: "bold" }}>Transactions</Typography>
+        </Box>
 
-      {/* Header Section */}
-      <Box className="header-section">
-        <Typography sx={{ fontWeight: "bold" }}>
-          Transactions
-        </Typography>
-      </Box>
+        {/* Search Section */}
+        <div className="search-section">
+          <TextField
+            variant="outlined"
+            size="small"
+            placeholder="Search by From, To or Amount..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            fullWidth
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </div>
 
-      {/* Search Section */}
-      <div className="search-section">
-        <TextField
-          variant="outlined"
-          size="small"
-          placeholder="Search by From, To or Amount..."
-          value={searchQuery}
-          onChange={handleSearchChange}
-          fullWidth
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-        />
+        {/* Table Section */}
+        <TableContainer component={Paper} className="table-container">
+          <Table
+            aria-label="Detailed Transactions Table"
+            size="small"
+            className="transaction-table"
+          >
+            <TableHead>
+              <TableRow>
+                <TableCell>
+                  <TableSortLabel
+                    active={sortBy === "timestamp"}
+                    direction={sortDirection}
+                    onClick={() => handleSort("timestamp")}
+                    // Set to active by default to show sort direction
+                    sx={{ "& .MuiTableSortLabel-icon": { opacity: 1 } }}
+                  >
+                    Time
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={sortBy === "from_business"}
+                    direction={sortDirection}
+                    onClick={() => handleSort("from_business")}
+                  >
+                    From
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={sortBy === "to_business"}
+                    direction={sortDirection}
+                    onClick={() => handleSort("to_business")}
+                  >
+                    To
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell align="right">
+                  <TableSortLabel
+                    active={sortBy === "amount"}
+                    direction={sortDirection}
+                    onClick={() => handleSort("amount")}
+                  >
+                    Amount
+                  </TableSortLabel>
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {paginatedData.map((row) => {
+                // Check if this is the new transaction that just came in
+                const isNewTransaction =
+                  newTransaction &&
+                  row.from === newTransaction.from &&
+                  row.to === newTransaction.to &&
+                  row.amount === newTransaction.amount &&
+                  row.timestamp === newTransaction.timestamp;
+
+                return (
+                  <TableRow
+                    key={row.id}
+                    className={isNewTransaction ? "new-transaction-row" : ""}
+                  >
+                    <TableCell>{formatTimestamp(row.timestamp)}</TableCell>
+                    <TableCell>{row.from_business}</TableCell>
+                    <TableCell>{row.to_business}</TableCell>
+                    <TableCell align="right">
+                      {formatAmount(row.amount)}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
       </div>
 
-      {/* Table Section */}
-      <TableContainer component={Paper} className="table-container">
-        <Table 
-          aria-label="Detailed Transactions Table"
-          size="small"
-          className="transaction-table"
-        >
-          <TableHead>
-            <TableRow>
-              <TableCell>
-                <TableSortLabel
-                  active={sortBy === "timestamp"}
-                  direction={sortDirection}
-                  onClick={() => handleSort("timestamp")}
-                  // Set to active by default to show sort direction
-                  sx={{ '& .MuiTableSortLabel-icon': { opacity: 1 } }}
-                >
-                  Time
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={sortBy === "from_business"}
-                  direction={sortDirection}
-                  onClick={() => handleSort("from_business")}
-                >
-                  From
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={sortBy === "to_business"}
-                  direction={sortDirection}
-                  onClick={() => handleSort("to_business")}
-                >
-                  To
-                </TableSortLabel>
-              </TableCell>
-              <TableCell align="right">
-                <TableSortLabel
-                  active={sortBy === "amount"}
-                  direction={sortDirection}
-                  onClick={() => handleSort("amount")}
-                >
-                  Amount
-                </TableSortLabel>
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {sortedData.map((row) => {
-              // Check if this is the new transaction that just came in
-              const isNewTransaction = newTransaction && 
-                row.from === newTransaction.from && 
-                row.to === newTransaction.to && 
-                row.amount === newTransaction.amount && 
-                row.timestamp === newTransaction.timestamp;
-                
-              return (
-                <TableRow 
-                  key={row.id}
-                  className={isNewTransaction ? 'new-transaction-row' : ''}
-                >
-                  <TableCell>{formatTimestamp(row.timestamp)}</TableCell>
-                  <TableCell>{row.from_business}</TableCell>
-                  <TableCell>{row.to_business}</TableCell>
-                  <TableCell align="right">{formatAmount(row.amount)}</TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Box className="pagination-section">
+          <Pagination
+            count={totalPages}
+            page={page}
+            onChange={(_, newPage) => setPage(newPage)}
+            color="primary"
+            size="medium"
+            showFirstButton
+            showLastButton
+            siblingCount={1}
+            boundaryCount={1}
+          />
+        </Box>
+      )}
     </div>
   );
 };

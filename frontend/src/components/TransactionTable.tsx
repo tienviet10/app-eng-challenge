@@ -49,23 +49,27 @@ const TransactionTable = () => {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       const result = await response.json();
-      const businesses = result.data || [];
-      
+      const businesses: Business[] = result.data || [];
+
       // Fetch transaction counts for each business
-      const countsMap: {[key: string]: number} = {};
-      for (const business of businesses) {
-        try {
-          const countResponse = await fetch(
-            `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/businesses/${business.business_id}/transaction-count`
-          );
-          if (countResponse.ok) {
-            const countData = await countResponse.json();
-            countsMap[business.business_id] = countData.transactionCount || 0;
-          }
-        } catch (err) {
-          console.error(`Failed to fetch transaction count for ${business.name}:`, err);
-        }
-      }
+      const countsMap: { [key: string]: number } = {};
+      const transactionCountsPromises = businesses.map((business) =>
+        fetch(
+          `${
+            import.meta.env.VITE_API_URL || "http://localhost:3000"
+          }/api/businesses/${business.business_id}/transaction-count`
+        )
+          .then((data) => data.json())
+          .then((parsedData) => {
+            countsMap[business.business_id] =
+              parsedData.data.transactionCount || 0;
+          })
+          .catch(() => {
+            countsMap[business.business_id] = 0;
+          })
+      );
+
+      await Promise.allSettled(transactionCountsPromises);
       
       // Combine business data with transaction counts
       const enrichedBusinesses = businesses.map((business: Business) => ({
