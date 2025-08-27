@@ -10,6 +10,7 @@ export interface TransactionWithBusinessName extends Transaction {
   to_business?: string;
 }
 
+
 export interface GraphNode {
   id: string;
   label?: string;

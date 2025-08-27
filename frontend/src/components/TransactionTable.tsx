@@ -98,7 +98,7 @@ const TransactionTable = () => {
     const socket = getSocket();
 
     // Function to find business ID from either direct ID or node data
-    const getBusinessId = (idOrObj: any): string | null => {
+    const getBusinessId = (idOrObj: string | Record<"id", string>): string | null => {
       if (typeof idOrObj === 'string') return idOrObj;
       if (idOrObj && idOrObj.id) return idOrObj.id;
       return null;

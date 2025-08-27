@@ -21,6 +21,7 @@ import "./TransactionDetails.css";
 const ITEM_PER_PAGE = 15;
 
 type Transaction = {
+  id: string;
   from: string;
   to: string;
   amount: number;
@@ -29,14 +30,32 @@ type Transaction = {
   to_business?: string;
 };
 
+type NodeGraph = {
+  id: string;
+  label: string;
+}
+
+type EdgeGraph = {
+  id: number;
+  source: string;
+  target: string;
+  transactionAmount: number;
+  transactionCount:number;
+}
+
+type SocketData = {
+  edges?: EdgeGraph[];
+  newTransaction?: Transaction;
+  nodes?: NodeGraph[];
+}
+
 const TransactionDetailsTable = () => {
   const [transactionsData, setData] = useState<Transaction[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [newTransaction, setNewTransaction] = useState<Transaction | null>(
-    null
-  );
+  const [newTransaction, setNewTransaction] = useState<Transaction | null>(null);
+
 
   // Sorting State - default to timestamp descending (newest first)
   const [sortBy, setSortBy] = useState<keyof Transaction>("timestamp");
@@ -50,13 +69,20 @@ const TransactionDetailsTable = () => {
     (async () => {
       setLoading(true);
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
         const response = await fetch(`${apiUrl}/api/businesses/transactions/`);
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
         const result = await response.json();
-        setData(result.data);
+        const resultWithIds: Transaction[] = [];
+        result.data.forEach((item: Transaction, index: number) => {
+          resultWithIds.push({
+            ...item,
+            id: `tx-${Date.now()}-${index}`
+          })
+        })
+        setData(resultWithIds);
       } catch (err: unknown) {
         setError((err as Error).message);
       } finally {
@@ -71,20 +97,20 @@ const TransactionDetailsTable = () => {
     const socket = getSocket();
 
     // Define event handler
-    const handleGraphUpdate = async (data: any) => {
+    const handleGraphUpdate = async (data: SocketData) => {
       if (data && data.newTransaction) {
         const transaction = data.newTransaction;
-
+        
         // Add the new transaction to our data
-        setData((prevData) => {
+        setData(prevData => {
           // Create a new array with the new transaction at the beginning
-          const newData = [transaction, ...prevData];
+          const newData = [{...transaction, id: `tx-${Date.now()}`}, ...prevData];
           return newData;
         });
-
+        
         // Set new transaction for highlighting
         setNewTransaction(transaction);
-
+        
         // Clear the highlight effect after 3 seconds
         setTimeout(() => {
           setNewTransaction(null);
@@ -93,16 +119,17 @@ const TransactionDetailsTable = () => {
     };
 
     // Register event listener
-    socket.on("graphUpdate", handleGraphUpdate);
+    socket.on('graphUpdate', handleGraphUpdate);
 
     // Cleanup: remove event listener on unmount
     return () => {
-      socket.off("graphUpdate", handleGraphUpdate);
+      socket.off('graphUpdate', handleGraphUpdate);
     };
   }, []);
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error}</p>;
+
 
   // Handle Search Input Change
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -139,12 +166,11 @@ const TransactionDetailsTable = () => {
   };
 
   // Filter the transactions based on the search query
-  const filteredData = [...transactionsData].filter(
-    (transaction) =>
-      transaction.from_business?.toLowerCase().includes(searchQuery) ||
-      transaction.to_business?.toLowerCase().includes(searchQuery) ||
-      transaction.timestamp.toLowerCase().includes(searchQuery) ||
-      transaction.amount.toString().includes(searchQuery)
+  const filteredData = [...transactionsData].filter((transaction) =>
+    transaction.from_business?.toLowerCase().includes(searchQuery) ||
+    transaction.to_business?.toLowerCase().includes(searchQuery) ||
+    transaction.timestamp.toLowerCase().includes(searchQuery) ||
+    transaction.amount.toString().includes(searchQuery)
   );
 
   // Apply Sorting
